@@ -1,0 +1,32 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.cometchat.push_notifications">
+
+    <!-- Android VoIP is custom-screen only — no native Telecom/CallKit UI and -->
+    <!-- no phone-account/foreground-service-call permissions. The incoming -->
+    <!-- call uses a notification (CallStyle when USE_FULL_SCREEN_INTENT is -->
+    <!-- granted, plain otherwise) and a custom Flutter full-screen screen. -->
+    <application>
+        <!-- Handles the Decline action from call notifications without -->
+        <!-- launching the host app. -->
+        <receiver
+            android:name=".CallActionReceiver"
+            android:exported="false" />
+
+        <!-- Dedicated full-screen incoming-call activity. Shown over the -->
+        <!-- keyguard (showWhenLocked) so only the call UI is exposed on a -->
+        <!-- locked device; runs the host app's `incomingCallMain` entrypoint. -->
+        <!-- Its own task (taskAffinity="") + excludeFromRecents keeps it -->
+        <!-- isolated from the main app task. -->
+        <activity
+            android:name=".IncomingCallActivity"
+            android:exported="false"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:launchMode="singleTask"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen" />
+    </application>
+
+</manifest>
