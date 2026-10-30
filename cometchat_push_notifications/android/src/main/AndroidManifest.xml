@@ -1,0 +1,9 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Avatars are fetched over the network for the notification's large icon. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Required to post notifications at all on API 33+. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+
+</manifest>

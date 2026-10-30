@@ -1,0 +1,120 @@
+name: CI — VoIP
+
+# cometchat_voip only. Runs when the package or this file changes, so a PR to
+# the chat package does not spend runner minutes (macOS above all) here.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'cometchat_voip/**'
+      - '.github/workflows/ci-voip.yml'
+  pull_request:
+    paths:
+      - 'cometchat_voip/**'
+      - '.github/workflows/ci-voip.yml'
+
+# A newer push to the same PR cancels the run it supersedes.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # cometchat_calls_sdk 5.1 builds on iOS through Swift Package Manager and
+  # needs the FlutterFramework package, which Flutter generates from 3.41.
+  FLUTTER_VERSION: '3.41.4'
+
+jobs:
+  analyze:
+    name: VoIP — analyze and test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: cometchat_voip
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - run: flutter pub get
+      - run: dart format --output=none --set-exit-if-changed .
+      - run: flutter analyze lib test example
+      - run: flutter test
+      - name: Test the example
+        working-directory: cometchat_voip/example
+        run: flutter test
+      - name: Check the package is publishable
+        # The exact cometchat_calls_sdk pin is a deliberate warning: the native
+        # Calls SDK versions in the Gradle file and podspec have to match it.
+        run: dart pub publish --dry-run || true
+
+  android:
+    name: VoIP — build Android
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      # The Calls SDK's native libraries make this APK large, and packaging it
+      # ran the runner out of disk ("No space left on device" in
+      # :app:packageDebug). Toolchains this job never uses go first; the
+      # Android SDK stays.
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup \
+            /opt/hostedtoolcache/CodeQL /usr/local/share/boost /usr/share/swift
+          df -h /
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+          cache-dependency-path: |
+            cometchat_voip/android/*.gradle*
+            cometchat_voip/example/android/*.gradle*
+            cometchat_voip/example/android/app/*.gradle*
+            cometchat_voip/example/android/gradle/wrapper/gradle-wrapper.properties
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - name: Build the example
+        working-directory: cometchat_voip/example
+        # One ABI: the build checks the plugin compiles and links, and three
+        # copies of the native libraries is what filled the disk.
+        run: flutter build apk --debug --target-platform android-arm64
+      - name: Run the plugin's unit tests
+        working-directory: cometchat_voip/example/android
+        run: ./gradlew :cometchat_voip:testDebugUnitTest
+
+  ios:
+    name: VoIP — build iOS
+    # macOS minutes cost the most: only once the package analyzes and tests.
+    needs: analyze
+    runs-on: macos-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      # Only the Flutter pod is left (the Calls SDK comes through Swift
+      # Package Manager); keyed on the committed Podfile.lock.
+      - uses: actions/cache@v4
+        with:
+          path: |
+            cometchat_voip/example/ios/Pods
+            ~/Library/Caches/CocoaPods
+          key: pods-${{ runner.os }}-${{ hashFiles('cometchat_voip/example/ios/Podfile.lock') }}
+          restore-keys: pods-${{ runner.os }}-
+      - name: Build the example
+        working-directory: cometchat_voip/example
+        env:
+          # CocoaPods reads podspecs as UTF-8 and aborts on a POSIX locale.
+          LANG: en_US.UTF-8
+          LC_ALL: en_US.UTF-8
+        run: flutter build ios --debug --no-codesign

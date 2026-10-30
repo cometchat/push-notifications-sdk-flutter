@@ -1,0 +1,83 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!--
+      No Telecom ConnectionService: a call rings as a CallStyle notification
+      with a full-screen intent, which Android exempts from its
+      background-activity-launch limits. No FirebaseMessagingService either: the
+      app owns Firebase and hands call pushes to
+      CometChatVoip.handlePushNotification.
+    -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_PHONE_CALL" />
+    <!--
+      Android 14+ starts a phoneCall foreground service — the keep-alive that
+      holds the ring — only for an app holding this. cometchat_calls_sdk strips
+      it from the merged manifest because its own code never uses it, so
+      "replace" puts it back. It is a normal permission, granted at install.
+    -->
+    <uses-permission
+        android:name="android.permission.MANAGE_OWN_CALLS"
+        tools:node="replace" />
+    <!--
+      RECORD_AUDIO and CAMERA, asked for on Answer, come from the Calls SDK's
+      own manifest; declaring them again here would stop an audio-only app from
+      removing the camera.
+    -->
+
+    <application>
+
+        <!--
+          The full-screen ring screen, launched over the keyguard when the
+          device is locked. Its own task affinity and excludeFromRecents keep it
+          out of the app's back stack; singleTop means a redelivered push reuses
+          it instead of stacking a second one.
+        -->
+        <activity
+            android:name=".IncomingCallActivity"
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:showOnLockScreen="true"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
+            android:excludeFromRecents="true"
+            android:taskAffinity=".cometchat_voip_call"
+            android:theme="@style/CometChatVoipIncomingCallTheme" />
+
+        <!--
+          Answer lands here: it records the answer, asks for the microphone
+          (and the camera for video) when missing, then opens the app. It is
+          translucent and keeps its history so it survives the permission
+          dialog; showWhenLocked so the answer is recorded before any unlock.
+        -->
+        <activity
+            android:name=".AnswerTrampolineActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:showWhenLocked="true"
+            android:taskAffinity=".cometchat_voip_call"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
+        <!-- Decline, the backup expiry alarm, and the ring being dismissed. -->
+        <receiver
+            android:name=".ActionReceiver"
+            android:exported="false" />
+
+        <!--
+          Keeps the process alive from the ring until the answered call has
+          joined. A process started by a full-screen intent is reclaimed within
+          seconds otherwise, which kills the call mid-connect.
+        -->
+        <service
+            android:name=".RingingForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="phoneCall" />
+
+    </application>
+
+</manifest>

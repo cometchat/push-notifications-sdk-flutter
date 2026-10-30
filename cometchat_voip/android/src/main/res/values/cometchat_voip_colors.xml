@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="cometchat_voip_call_background">#0E0E10</color>
+    <color name="cometchat_voip_call_text">#F2F2F2</color>
+    <color name="cometchat_voip_call_text_secondary">#9A9AA1</color>
+    <color name="cometchat_voip_call_avatar">#6852D6</color>
+    <color name="cometchat_voip_call_accept">#1B8F3A</color>
+    <color name="cometchat_voip_call_decline">#C62828</color>
+    <!-- Today's values, so nothing changes for an app without a theme: the
+         labels follow text_secondary (an app that restyled it keeps it there),
+         the initials and the button glyphs stay white. -->
+    <color name="cometchat_voip_call_avatar_text">#FFFFFF</color>
+    <color name="cometchat_voip_call_accept_icon">#FFFFFF</color>
+    <color name="cometchat_voip_call_decline_icon">#FFFFFF</color>
+    <color name="cometchat_voip_call_accept_label">@color/cometchat_voip_call_text_secondary</color>
+    <color name="cometchat_voip_call_decline_label">@color/cometchat_voip_call_text_secondary</color>
+</resources>

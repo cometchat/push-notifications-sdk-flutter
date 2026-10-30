@@ -1,0 +1,36 @@
+name: cometchat_voip_example
+description: "Demonstrates how to use the cometchat_voip package."
+publish_to: 'none'
+
+environment:
+  sdk: ^3.10.8
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cometchat_voip:
+    # The example is bundled with the package, so it depends on the parent
+    # directory. A real app depends on a version.
+    path: ../
+
+  # The example brings the Calls SDK up itself, as a real app does: it is what
+  # rings the calls this package hands it.
+  cometchat_calls_sdk: ^5.1.0
+
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  integration_test:
+    sdk: flutter
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  # cometchat_calls_sdk 5.1 builds on iOS only through Swift Package Manager,
+  # which Flutter turns on by default only from 3.44.
+  config:
+    enable-swift-package-manager: true

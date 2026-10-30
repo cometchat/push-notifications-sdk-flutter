@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The ring screen's own theme. It cannot inherit the app's: it is drawn over
+  the keyguard on a process that has just started, and an app theme could make
+  it translucent, give it an action bar, or put light text on light.
+-->
+<resources>
+    <style name="CometChatVoipIncomingCallTheme" parent="@android:style/Theme.Material.NoActionBar.Fullscreen">
+        <item name="android:windowBackground">@color/cometchat_voip_call_background</item>
+        <item name="android:statusBarColor">@color/cometchat_voip_call_background</item>
+        <item name="android:navigationBarColor">@color/cometchat_voip_call_background</item>
+    </style>
+</resources>

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Every user-visible string on the ring path lives here, so an app can
+  translate or override any of them from its own resources.
+-->
+<resources>
+    <string name="cometchat_voip_incoming_call_text">Incoming %1$s call</string>
+    <string name="cometchat_voip_answer_ends_current_call">Answering ends your current call</string>
+    <string name="cometchat_voip_call_type_audio">audio</string>
+    <string name="cometchat_voip_call_type_video">video</string>
+    <string name="cometchat_voip_action_answer">Answer</string>
+    <string name="cometchat_voip_action_decline">Decline</string>
+    <string name="cometchat_voip_missed_call_title">Missed call</string>
+    <string name="cometchat_voip_missed_call_text">%1$s · %2$s call</string>
+    <plurals name="cometchat_voip_missed_calls_summary">
+        <item quantity="one">%d missed call</item>
+        <item quantity="other">%d missed calls</item>
+    </plurals>
+    <string name="cometchat_voip_connecting_call_text">Connecting call…</string>
+    <string name="cometchat_voip_channel_incoming_name">Incoming calls</string>
+    <string name="cometchat_voip_channel_incoming_description">Rings and shows a full-screen alert for incoming calls</string>
+    <string name="cometchat_voip_channel_missed_name">Missed calls</string>
+    <string name="cometchat_voip_channel_missed_description">Calls you did not answer</string>
+    <string name="cometchat_voip_channel_ongoing_name">Ongoing calls</string>
+    <string name="cometchat_voip_channel_ongoing_description">Shows while an answered call connects</string>
+</resources>

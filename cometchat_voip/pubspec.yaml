@@ -1,0 +1,39 @@
+name: cometchat_voip
+description: "Incoming CometChat calls that ring in Flutter apps: CallKit on iOS, a full-screen ring screen on Android, missed calls and VoIP push token registration."
+version: 2.0.0
+homepage: https://www.cometchat.com
+repository: https://github.com/cometchat/push-notifications-sdk-flutter
+
+environment:
+  sdk: ^3.10.8
+  flutter: '>=3.3.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # The ringer drives the native Calls SDK this package brings in: it connects
+  # while the phone rings, sends the decline, and hands the call to the app's
+  # IncomingCallListener. 5.1.0 is the first line that has any of that.
+  #
+  # This is the ONLY place the Calls SDK is declared. Our own Kotlin and Swift
+  # link no SDK at all — see android/build.gradle and ios/cometchat_voip.podspec
+  # — so everything the ringer needs from the Calls SDK goes back to Dart
+  # through DartBridge/DartCallsBridge. Nothing here links the native
+  # push-notifications SDKs either; those are read as a specification and
+  # ported.
+  cometchat_calls_sdk: ^5.1.0
+  plugin_platform_interface: ^2.1.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: com.cometchat.voip
+        pluginClass: CometchatVoipPlugin
+      ios:
+        pluginClass: CometchatVoipPlugin

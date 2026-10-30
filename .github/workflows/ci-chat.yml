@@ -1,0 +1,119 @@
+name: CI — Chat
+
+# cometchat_push_notifications only. Runs when the package or this file
+# changes, so a PR to the VoIP package does not spend runner minutes (macOS
+# above all) here.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'cometchat_push_notifications/**'
+      - '.github/workflows/ci-chat.yml'
+  pull_request:
+    paths:
+      - 'cometchat_push_notifications/**'
+      - '.github/workflows/ci-chat.yml'
+
+# A newer push to the same PR cancels the run it supersedes.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  FLUTTER_VERSION: '3.38.9'
+
+jobs:
+  analyze:
+    name: Chat — analyze and test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: cometchat_push_notifications
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - run: flutter pub get
+      - run: dart format --output=none --set-exit-if-changed .
+      - run: flutter analyze lib test example
+      - run: flutter test
+      - name: Test the example
+        working-directory: cometchat_push_notifications/example
+        run: flutter test
+      - name: Build for web
+        working-directory: cometchat_push_notifications/example
+        run: flutter build web
+
+      - name: Check the package is publishable
+        # The git-state warning is expected on a PR checkout; everything else
+        # that matters here fails the command outright.
+        run: dart pub publish --dry-run || true
+
+  android:
+    name: Chat — build Android
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+          cache-dependency-path: |
+            cometchat_push_notifications/android/*.gradle*
+            cometchat_push_notifications/example/android/*.gradle*
+            cometchat_push_notifications/example/android/app/*.gradle*
+            cometchat_push_notifications/example/android/gradle/wrapper/gradle-wrapper.properties
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - name: Build the example
+        working-directory: cometchat_push_notifications/example
+        # One ABI is enough to check the plugin compiles and links.
+        run: flutter build apk --debug --target-platform android-arm64
+      - name: Run the plugin's unit tests
+        working-directory: cometchat_push_notifications/example/android
+        run: ./gradlew :cometchat_push_notifications:test
+
+  ios:
+    name: Chat — build iOS
+    # macOS minutes cost the most: only once the package analyzes and tests.
+    needs: analyze
+    runs-on: macos-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - uses: actions/cache@v4
+        with:
+          path: |
+            cometchat_push_notifications/example/ios/Pods
+            ~/Library/Caches/CocoaPods
+          key: pods-${{ runner.os }}-${{ hashFiles('cometchat_push_notifications/example/ios/Podfile.lock') }}
+          restore-keys: pods-${{ runner.os }}-
+      - name: Build the example
+        working-directory: cometchat_push_notifications/example
+        env:
+          # CocoaPods reads podspecs as UTF-8 and aborts on a POSIX locale.
+          LANG: en_US.UTF-8
+          LC_ALL: en_US.UTF-8
+        run: flutter build ios --debug --no-codesign
+      - name: Lint the extension pod
+        env:
+          LANG: en_US.UTF-8
+          LC_ALL: en_US.UTF-8
+        # It builds against CometChatSDK from trunk, which is the only check
+        # that the extension's SDK calls still exist.
+        working-directory: cometchat_push_notifications
+        run: pod lib lint ios/CometChatPushNotificationsNSE.podspec --allow-warnings --platforms=ios

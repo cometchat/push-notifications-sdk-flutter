@@ -1,0 +1,97 @@
+group = "com.cometchat.voip"
+version = "1.0-SNAPSHOT"
+
+buildscript {
+    ext.kotlin_version = "2.2.20"
+    repositories {
+        google()
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath("com.android.tools.build:gradle:8.11.1")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version")
+    }
+}
+
+// The app module resolves this plugin's dependencies with its own repositories,
+// not the plugin's. Nothing here needs the Calls SDK's own repositories any
+// more — cometchat_calls_sdk declares those for itself — but they stay so this
+// plugin keeps building on its own, and so an app that pins the Calls SDK
+// explicitly still resolves it.
+rootProject.allprojects {
+    repositories {
+        google()
+        mavenCentral()
+        maven { url "https://dl.cloudsmith.io/public/cometchat/cometchat/maven/" }
+        // Prerelease Calls SDK builds (5.1.x) live here until they are public.
+        maven { url "https://dl.cloudsmith.io/public/cometchat/call-team/maven/" }
+    }
+}
+
+apply plugin: "com.android.library"
+apply plugin: "kotlin-android"
+
+android {
+    namespace = "com.cometchat.voip"
+
+    compileSdk = 36
+
+    // Every resource carries this prefix, so none can collide with the app's
+    // once the manifests and resources merge.
+    resourcePrefix = "cometchat_voip_"
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = JavaVersion.VERSION_17
+    }
+
+    sourceSets {
+        main.java.srcDirs += "src/main/kotlin"
+        test.java.srcDirs += "src/test/kotlin"
+    }
+
+    defaultConfig {
+        // The Calls SDK is a React Native artifact, and react-native-svg
+        // declares 26. Anything depending on it inherits that floor.
+        minSdk = 26
+    }
+
+    dependencies {
+        // No Calls SDK here. This package depends on `cometchat_calls_sdk` and
+        // nothing else, so everything that needs the SDK goes back to Dart
+        // through DartBridge — which starts a background isolate when the app
+        // is gone, since the ringer runs in processes no Dart reaches: a
+        // notification action, an alarm, a WorkManager job.
+
+        // NotificationCompat.CallStyle needs 1.10.0+.
+        implementation("androidx.core:core-ktx:1.13.1")
+        // The LifecycleOwner the Calls SDK's session listeners are keyed on.
+        implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
+        // A decline has to survive the process dying between the tap and the
+        // network call.
+        implementation("androidx.work:work-runtime-ktx:2.10.0")
+
+        testImplementation("org.jetbrains.kotlin:kotlin-test")
+        testImplementation("org.mockito:mockito-core:5.0.0")
+        // The parser reads the legacy nested payload with org.json, which is a
+        // stub in android.jar; the real one runs it under test.
+        testImplementation("org.json:json:20240303")
+    }
+
+    testOptions {
+        unitTests.all {
+            useJUnitPlatform()
+
+            testLogging {
+               events "passed", "skipped", "failed", "standardOut", "standardError"
+               outputs.upToDateWhen {false}
+               showStandardStreams = true
+            }
+        }
+    }
+}

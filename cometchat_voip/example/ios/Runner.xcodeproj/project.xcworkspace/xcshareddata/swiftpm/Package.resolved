@@ -1,0 +1,14 @@
+{
+  "pins" : [
+    {
+      "identity" : "calls-sdk-ios",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/cometchat/calls-sdk-ios.git",
+      "state" : {
+        "revision" : "7bf2673d1f02adb686113ab892040ce866e07a8c",
+        "version" : "5.1.0"
+      }
+    }
+  ],
+  "version" : 2
+}
